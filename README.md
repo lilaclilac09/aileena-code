@@ -86,6 +86,8 @@ These are exactly the places where a real harness starts.
   for caching, owner-only modes, quotas, and action IDs so retried side
   effects never run twice. If you want to see which parts of Machina are
   the agent and which parts are elbow grease, compare it with this file.
+  Machina's code mode ([`lib/codeAgent/agent.ts`](https://github.com/lilaclilac09/aileen_machina_01/blob/main/aileena-new/lib/codeAgent/agent.ts))
+  is this loop ported to TypeScript, with the same names.
 
 ## Run it
 
@@ -127,9 +129,47 @@ also covers `edit_file` (create, replace, errors) and `list_files`.
 
 ## Demo
 
-No live demo transcript yet: there was no API key in the build environment,
-so this version was checked with `go build`, `go vet` and the offline tests
-only. A real transcript will be added after the first run with a key.
+The Go binary has not been run against a live model yet: there was no API key
+in the build environment, so it was checked with `go build`, `go vet` and the
+offline tests only. A real transcript will be added after the first run with
+a key.
+
+The same loop, ported to TypeScript, runs live in Machina. Anyone can call it
+through the public MCP tool `suggest_patch` at `https://www.aileena.xyz/api/mcp`
+(see [docs/mcp-github.md](https://github.com/lilaclilac09/aileen_machina_01/blob/main/aileena-new/docs/mcp-github.md)).
+Real output from 18 October 2026, for the article's FizzBuzz task (a `.env`
+file was sent too and was refused):
+
+```diff
+--- a/fizzbuzz.js
++++ b/fizzbuzz.js
+@@ -1,7 +1,15 @@
+ function fizzBuzz(n) {
+   for (let i = 1; i <= n; i++) {
+-    console.log(i);
+-  }
+-}
+-
+-fizzBuzz(100);
++    if (i % 15 === 0) {
++      console.log("FizzBuzz");
++    } else if (i % 3 === 0) {
++      console.log("Fizz");
++    } else if (i % 5 === 0) {
++      console.log("Buzz");
++    } else {
++      console.log(i);
++    }
++  }
++}
++
++fizzBuzz(15);
+```
+
+```text
+$ git apply p.diff && node fizzbuzz.js
+1 2 Fizz 4 Buzz Fizz 7 8 Fizz Buzz 11 Fizz 13 14 FizzBuzz
+```
 
 ## License
 

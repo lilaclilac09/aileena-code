@@ -25,7 +25,7 @@ func main() {
 		return scanner.Text(), true
 	}
 
-	tools := []ToolDefinition{}
+	tools := []ToolDefinition{ReadFileDefinition}
 	agent := NewAgent(client, getUserMessage, tools)
 	err := agent.Run(context.TODO())
 	if err != nil {
@@ -125,6 +125,47 @@ type ToolDefinition struct {
 	Description string
 	InputSchema map[string]any
 	Function    func(input json.RawMessage) (string, error)
+}
+
+// schema hand-writes what the article generates with invopop/jsonschema (keeps us dependency-free).
+func schema(properties map[string]any, required ...string) map[string]any {
+	s := map[string]any{"type": "object", "properties": properties}
+	if len(required) > 0 {
+		s["required"] = required
+	}
+	return s
+}
+
+func prop(description string) map[string]any {
+	return map[string]any{"type": "string", "description": description}
+}
+
+// --- read_file -------------------------------------------------------------
+
+var ReadFileDefinition = ToolDefinition{
+	Name:        "read_file",
+	Description: "Read the contents of a given relative file path. Use this when you want to see what's inside a file. Do not use this with directory names.",
+	InputSchema: schema(map[string]any{
+		"path": prop("The relative path of a file in the working directory."),
+	}, "path"),
+	Function: ReadFile,
+}
+
+type ReadFileInput struct {
+	Path string `json:"path"`
+}
+
+func ReadFile(input json.RawMessage) (string, error) {
+	readFileInput := ReadFileInput{}
+	if err := json.Unmarshal(input, &readFileInput); err != nil {
+		return "", err
+	}
+
+	content, err := os.ReadFile(readFileInput.Path)
+	if err != nil {
+		return "", err
+	}
+	return string(content), nil
 }
 
 // --- client: the article uses Anthropic's Go SDK; we speak OpenAI-compatible

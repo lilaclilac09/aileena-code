@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -25,7 +26,7 @@ func main() {
 		return scanner.Text(), true
 	}
 
-	tools := []ToolDefinition{ReadFileDefinition}
+	tools := []ToolDefinition{ReadFileDefinition, ListFilesDefinition}
 	agent := NewAgent(client, getUserMessage, tools)
 	err := agent.Run(context.TODO())
 	if err != nil {
@@ -166,6 +167,62 @@ func ReadFile(input json.RawMessage) (string, error) {
 		return "", err
 	}
 	return string(content), nil
+}
+
+// --- list_files ------------------------------------------------------------
+
+var ListFilesDefinition = ToolDefinition{
+	Name:        "list_files",
+	Description: "List files and directories at a given path. If no path is provided, lists files in the current directory.",
+	InputSchema: schema(map[string]any{
+		"path": prop("Optional relative path to list files from. Defaults to current directory if not provided."),
+	}),
+	Function: ListFiles,
+}
+
+type ListFilesInput struct {
+	Path string `json:"path,omitempty"`
+}
+
+func ListFiles(input json.RawMessage) (string, error) {
+	listFilesInput := ListFilesInput{}
+	if err := json.Unmarshal(input, &listFilesInput); err != nil {
+		return "", err
+	}
+
+	dir := "."
+	if listFilesInput.Path != "" {
+		dir = listFilesInput.Path
+	}
+	files := []string{}
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		relPath, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		if info.IsDir() && info.Name() == ".git" {
+			return filepath.SkipDir // not in the article: .git floods the context
+		}
+		if relPath != "." {
+			if info.IsDir() {
+				files = append(files, relPath+"/")
+			} else {
+				files = append(files, relPath)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	result, err := json.Marshal(files)
+	if err != nil {
+		return "", err
+	}
+	return string(result), nil
 }
 
 // --- client: the article uses Anthropic's Go SDK; we speak OpenAI-compatible

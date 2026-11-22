@@ -1,5 +1,7 @@
 # aileena-code
 
+Status: LOCAL ONLY — Go CLI verified offline, not against a live model; next human action: run the binary in a scratch directory with your own model API key. Machina's related hosted demo below is a separate implementation.
+
 A code-editing agent in **one Go file, under 400 lines, zero dependencies**.
 
 It is a faithful, step-by-step build of Thorsten Ball's
